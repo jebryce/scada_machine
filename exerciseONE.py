@@ -13,13 +13,12 @@ class Label(Enum):
     VALID = 1
 
 def gen_MAC_addr():
-    return int.from_bytes(random.randbytes(4), byteorder='big')
+    return int.from_bytes(random.randbytes(6), byteorder='big')
 
 def gen_test_point():
     data = gen_MAC_addr()
 
-    # if the first 3 bytes are B827EB
-    if data & 0xFFFFFF000000 == 0xB827EB000000:
+    if data & 0xFFFF00_000000 == 0xB82700_000000:
         label = Label.VALID
     else:
         label = Label.INVALID
@@ -47,9 +46,7 @@ model.compile(optimizer = 'sgd', loss = 'mean_squared_error')
 
 # defining the training data
 # want to see if it can guess that the only acceptable mac addresses start with:
-# B8:27:EB
-# from 202481585881088 to 202481602658304
-
-print(gen_points(50))
-
+# B8:27
+train_data, train_labels    = gen_points(1_000_000)
+test_data,  test_labels     = gen_points(1_000)
 
