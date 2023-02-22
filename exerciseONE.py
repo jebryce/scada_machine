@@ -4,6 +4,7 @@ import tensorflow as tf
 import numpy as np
 import random
 from enum import Enum
+import os
 
 # defaults to current system time
 random.seed()
@@ -13,25 +14,30 @@ class Label(Enum):
     VALID = 1
 
 def gen_MAC_addr():
-    return int.from_bytes(random.randbytes(6), byteorder='big')
+    if random.randint(0,1):
+        return 0xB8
+    else:
+        return random.randint(0,255)
 
 def gen_test_point():
     data = gen_MAC_addr()
 
-    if data & 0xFFFF00_000000 == 0xB82700_000000:
-        label = Label.VALID
+    if data == 0xB8:
+        label = Label.VALID.value
     else:
-        label = Label.INVALID
+        label = Label.INVALID.value
 
     return data, label
 
 def gen_points(num_points):
-    data = []
-    labels = []
+    data = np.ndarray((num_points, 1))
+    labels = np.ndarray((num_points, 1))
     for i in range(num_points):
         data_point, label = gen_test_point()
-        data.append(data_point)
-        labels.append(label)
+
+        # normalize data to values between 0 and 1
+        data[i] =   data_point / 0xFF
+        labels[i] = label
     
     return data, labels
 
@@ -39,14 +45,43 @@ def gen_points(num_points):
 
 # defining the model
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(units = 1, input_shape=[1])
+    tf.keras.layers.Dense(128, activation=tf.nn.relu),
+    tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)
 ])
 
-model.compile(optimizer = 'sgd', loss = 'mean_squared_error')
+model.compile(
+    optimizer = 'sgd', loss = 'mean_squared_error', metrics = ['accuracy']
+)
 
 # defining the training data
-# want to see if it can guess that the only acceptable mac addresses start with:
-# B8:27
-train_data, train_labels    = gen_points(1_000_000)
-test_data,  test_labels     = gen_points(1_000)
+train_data, train_labels    = gen_points(90_000)
+test_data,  test_labels     = gen_points(10_000)
 
+num_valid = 0
+for i in range(len(train_labels)):
+    if train_labels[i] == 1:
+        num_valid += 1
+
+os.system('cls')
+print("Number of valid points: ", num_valid)
+
+# training the model
+model.fit(train_data, train_labels, epochs = 10)
+
+# evaluating test data
+model.evaluate(test_data, test_labels)
+
+valid_nums = np.array([
+    0xB8
+])
+
+
+# Make a prediction
+prediction = model.predict(valid_nums / 0xFF)
+print(prediction[0])
+if prediction[0] > 0.9:
+    print('The value {:02X} is valid!'.format(valid_nums[0]))
+elif prediction[0] < 0.1:
+    print('The value {:02X} is invalid!'.format(valid_nums[0]))
+else:
+    print('The value {:02X} isn\'t decisively valid or invalid!'.format(valid_nums[0]))
