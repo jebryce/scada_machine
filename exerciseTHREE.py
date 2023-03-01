@@ -15,10 +15,11 @@ CORRECT_PREFIX      = 0xB827EB_000000
 CORRECT_MASK        = 0xFFFFFF_000000
 MAX_NUMBER          = 0xFFFFFF_FFFFFF
 
-ACCURACY_TARGET     = 0.98
+ACCURACY_TARGET     = 0.99
 # training points will be 9 times test points
-TEST_POINTS         = 100_000
+TEST_POINTS         = 50_000
 
+# percent of points that will be correct
 PERCENT_CORRECT = 25
 if PERCENT_CORRECT > 100 or PERCENT_CORRECT < 0:
     raise ValueError("PERCENT_CORRECT must be >= 0 and <= 100")
@@ -73,9 +74,8 @@ callbacks = myCallback()
 
 # defining the model
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(128, activation=tf.nn.leaky_relu),
-    tf.keras.layers.Dense(128, activation=tf.nn.leaky_relu),
-    tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)
+    tf.keras.layers.Dense(1024,     activation=tf.nn.relu),
+    tf.keras.layers.Dense(1,        activation=tf.nn.sigmoid)
 ])
 
 model.compile(
@@ -94,8 +94,8 @@ for i in range(len(train_labels)):
         num_valid += 1
 
 os.system('clear')
-print("Number of valid points: ", num_valid)
-print("Percentage of valid points: {:.1f}%".format(100 * num_valid / TEST_POINTS / 9))
+print("Number of valid training points: ", num_valid)
+print("Percentage of training points that are valid: {:.1f}%".format(100 * num_valid / TEST_POINTS / 9))
 
 # training the model
 model.fit(train_data, train_labels, epochs = 100, callbacks=[callbacks])
@@ -140,11 +140,10 @@ test_nums = np.array([
 prediction = model.predict(test_nums / MAX_NUMBER)
 
 for num in range(len(test_nums)):
-    print("There was a prediction of {:.3f}!".format(prediction[num][0]))
-
-    if prediction[num] > 0.9:
-        print('The value {:02X} is valid!'.format(test_nums[num]))
-    elif prediction[num] < 0.1:
-        print('The value {:02X} is invalid!'.format(test_nums[num]))
+    print("There was a prediction of {:.3f} for".format(prediction[num][0]), end = ' ')
+    if prediction[num] > 0.67:
+        print('the value {:02X}, which is valid!'.format(test_nums[num]))
+    elif prediction[num] < 0.33:
+        print('the value {:02X}, which is invalid!'.format(test_nums[num]))
     else:
-        print('The value {:02X} isn\'t decisively valid or invalid!'.format(test_nums[num]))
+        print('the value {:02X}, which isn\'t decisively valid or invalid!'.format(test_nums[num]))
