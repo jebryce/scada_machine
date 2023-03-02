@@ -20,10 +20,10 @@ CORRECT_PREFIXES    = (0x000000_000000,
 CORRECT_MASK        = 0xFFFFFF_000000
 MAX_NUMBER          = 0xFFFFFF_FFFFFF
 
-ACCURACY_TARGET     = 0.95
+ACCURACY_TARGET     = 0.96
 
 # training points will be 9 times test points
-TEST_POINTS         = 100_000
+TEST_POINTS         = 10_000
 
 NUM_EPOCHS          = 100
 
@@ -73,8 +73,6 @@ class myCallback(tf.keras.callbacks.Callback):
   def on_epoch_end(self, epoch, logs={}):
 
     # Check accuracy of test data
-    if epoch < 10:
-        return
 
     if logs.get('accuracy') > ACCURACY_TARGET:
         print('\nStopping training due to > {} accuracy!'.format(ACCURACY_TARGET))
@@ -87,8 +85,9 @@ callbacks = myCallback()
 
 # defining the model
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(1024,     activation=tf.nn.relu),
-    tf.keras.layers.Dense(1,        activation=tf.nn.sigmoid)
+    tf.keras.layers.Dense(64,   activation=tf.nn.relu),
+    tf.keras.layers.Dense(64,   activation=tf.nn.relu),
+    tf.keras.layers.Dense(1,    activation=tf.nn.sigmoid)
 ])
 
 model.compile(
@@ -97,7 +96,7 @@ model.compile(
     metrics = ['accuracy']
 )
 
-# defining the training data
+# defining the training data/
 train_data, train_labels    = gen_points(TEST_POINTS * 9)
 test_data,  test_labels     = gen_points(TEST_POINTS)
 
@@ -115,6 +114,8 @@ model.fit(train_data, train_labels, epochs = NUM_EPOCHS, callbacks=[callbacks])
 
 # evaluating test data
 model.evaluate(test_data, test_labels)
+
+model.summary()
 
 xs = np.linspace(0, MAX_NUMBER, VIS_PREC)
 ys = model.predict(xs / MAX_NUMBER)
