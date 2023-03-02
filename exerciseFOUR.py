@@ -96,7 +96,7 @@ model.compile(
     metrics = ['accuracy']
 )
 
-# defining the training data/
+# defining the training data
 train_data, train_labels    = gen_points(TEST_POINTS * 9)
 test_data,  test_labels     = gen_points(TEST_POINTS)
 
